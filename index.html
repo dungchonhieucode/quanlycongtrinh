@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Công trình</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Styles --- */
+        :root { 
+            --primary-blue: #2563eb; 
+            --primary-blue-dark: #1d4ed8;
+            --success-green: #22c55e; 
+            --danger-red: #ef4444; 
+            --light-gray: #f3f4f6; 
+            --text-dark: #1f2937; 
+            --text-secondary: #6b7280; 
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .hidden { display: none !important; }
+        body { margin: 0; font-family: 'Be Vietnam Pro', sans-serif; background-color: var(--light-gray); color: var(--text-dark); line-height: 1.6; }
+        .container { padding: 20px; padding-bottom: 100px; max-width: 800px; margin: 0 auto; }
+        .page-header { font-size: 32px; font-weight: 700; margin: 0 0 28px 0; display: flex; align-items: center; }
+        .welcome-header { font-size: 20px; font-weight: 500; color: var(--text-secondary); margin-bottom: 24px; }
+        .back-button { background: none; border: none; font-size: 28px; margin-right: 12px; cursor: pointer; color: var(--text-dark); }
+        .status-message { text-align: center; color: var(--text-secondary); padding: 50px 0; }
+        .text-green { color: var(--success-green); }
+        .text-red { color: var(--danger-red); }
+
+        /* --- Animations --- */
+        .view { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Views --- */
+        .view.active { display: block; }
+        .view { display: none; }
+
+        /* --- Project List View --- */
+        .create-button { display: flex; align-items: center; justify-content: center; width: 100%; padding: 18px; margin-bottom: 28px; font-size: 18px; font-weight: 700; color: var(--white); background-image: linear-gradient(to right, var(--primary-blue), #3b82f6); border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); transition: all 0.2s ease; }
+        .create-button:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .project-card { background-color: var(--white); padding: 24px; border-radius: 16px; box-shadow: var(--shadow-md); position: relative; margin-bottom: 24px; transition: all 0.2s ease-in-out; border: 1px solid #e5e7eb; }
+        .project-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+        .project-card h2 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; padding-right: 30px; }
+        .project-card .description { color: var(--text-secondary); margin-bottom: 12px; font-size: 15px; }
+        .project-card .info-item { color: var(--text-secondary); margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; }
+        .project-card .info-item .icon { margin-right: 8px; font-size: 18px; }
+        .project-card .details-button { width: 100%; padding: 14px; margin-top: 16px; border: none; background-color: var(--primary-blue); color: var(--white); border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; transition: background-color 0.2s; }
+        .project-card .details-button:hover { background-color: var(--primary-blue-dark); }
+        .project-card .delete-button { position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--danger-red); font-size: 22px; z-index: 2; opacity: 0.7; transition: opacity 0.2s; }
+        .project-card .delete-button:hover { opacity: 1; }
+        .project-owner { font-size: 12px; background-color: #eef2ff; color: #4338ca; padding: 4px 10px; border-radius: 99px; font-weight: 500; margin-top: 16px; display: inline-block; }
+
+        /* --- Project Detail View (Mobile Optimized Thu/Chi) --- */
+        .finance-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+        .finance-card { background: var(--white); padding: 16px 12px; border-radius: 12px; text-align: center; box-shadow: var(--shadow-sm); }
+        .finance-card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+        .finance-card .value { font-weight: 700; font-size: 18px; }
+        .add-transaction-form { background: var(--white); padding: 20px; border-radius: 16px; margin-bottom: 28px; box-shadow: var(--shadow-md); }
+        .add-transaction-form h3 { margin-top: 0; margin-bottom: 16px; }
+        .form-row { margin-bottom: 16px; }
+        .transaction-type-select, .form-input { padding: 16px; border-radius: 10px; border: 1px solid #d1d5db; font-family: inherit; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .add-btn { background-color: var(--primary-blue); color: white; border: none; cursor: pointer; width: 100%; padding: 18px; font-size: 18px; font-weight: 700; border-radius: 10px; transition: background-color 0.2s; }
+        .add-btn:hover { background-color: var(--primary-blue-dark); }
+        .transaction-list h3 { margin-bottom: 12px; font-size: 20px; }
+        .transaction-item { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 16px; border-bottom: 1px solid #f3f4f6; }
+        .transaction-item:first-of-type { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+        .transaction-item:last-of-type { border-bottom: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+        .t-info .t-desc { font-weight: 500; margin-bottom: 4px; font-size: 16px; }
+        .t-info .t-date { font-size: 13px; color: var(--text-secondary); }
+        .t-amount { font-weight: 700; font-size: 16px; }
+
+        /* --- Admin View --- */
+        .admin-section h2 { font-size: 22px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; }
+        .user-card { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background-color: var(--white); padding: 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: var(--shadow-sm); gap: 10px; }
+        .user-details { flex: 1 1 200px; }
+        .user-details .display-name { font-weight: 700; font-size: 16px; }
+        .user-details .email { font-size: 14px; color: var(--text-secondary); }
+        .user-actions { display: flex; align-items: center; gap: 16px; }
+        .btn-set-name { background-color: #eef2ff; color: #4338ca; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; }
+        .btn-set-name:hover { background-color: #e0e7ff; }
+        .permission-toggle { display: flex; flex-direction: column; align-items: center; }
+        .permission-toggle .toggle-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success-green); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* --- Modals & Bottom Nav --- */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+        .modal { background: #fff; border-radius: 16px; padding: 28px; width: 90%; max-width: 450px; z-index: 101; box-shadow: var(--shadow-lg); }
+        .modal h2 { margin-top: 0; font-size: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+        .modal button { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+        .btn-save { background-color: var(--primary-blue); color: #fff; }
+        .btn-save:hover { background-color: var(--primary-blue-dark); }
+        .btn-cancel { background-color: #e5e7eb; }
+        .btn-cancel:hover { background-color: #d1d5db; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--white); border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08); z-index: 90; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-secondary); font-size: 12px; font-weight: 500; border: none; background: none; cursor: pointer; padding: 0 10px; transition: color 0.2s; }
+        .nav-item .icon { font-size: 28px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary-blue); }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div id="welcome-message" class="welcome-header"></div>
+
+        <!-- VIEW 1: OVERVIEW -->
+        <div id="overview-view" class="view">
+            <h1 class="page-header">Tổng quan</h1>
+            <!-- Overview content... -->
+        </div>
+
+        <!-- VIEW 2: PROJECTS LIST -->
+        <div id="projects-view" class="view active">
+            <h1 class="page-header">Công trình</h1>
+            <button class="create-button" id="show-modal-btn"><span class="plus-icon">+</span> Tạo công trình mới</button>
+            <div id="projects-container"><p class="status-message">Đang tải...</p></div>
+        </div>
+
+        <!-- VIEW 3: PROJECT DETAIL (THU/CHI) -->
+        <div id="project-detail-view" class="view">
+            <header class="page-header">
+                <button class="back-button" onclick="goBackToProjects()">←</button>
+                <span id="detail-project-name">Tên công trình</span>
+            </header>
+             <div class="finance-summary">
+                <div class="finance-card"><div class="label">Tổng Thu</div><div class="value text-green" id="sum-thu">0 đ</div></div>
+                <div class="finance-card"><div class="label">Tổng Chi</div><div class="value text-red" id="sum-chi">0 đ</div></div>
+                <div class="finance-card"><div class="label">Số dư</div><div class="value" id="sum-balance">0 đ</div></div>
+            </div>
+            <div class="add-transaction-form">
+                <h3>Thêm giao dịch mới</h3>
+                <form id="transaction-form">
+                    <!-- Form fields -->
+                    <div class="form-row">
+                         <select id="t-type" class="transaction-type-select">
+                            <option value="thu">Thu (+)</option>
+                            <option value="chi">Chi (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="t-amount" class="form-input" placeholder="Số tiền (VNĐ)" required oninput="formatInputMoney(this)">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="t-desc" class="form-input" placeholder="Mô tả (VD: Ứng tiền, Mua vật tư)" required>
+                    </div>
+                    <button type="submit" class="add-btn">Thêm giao dịch</button>
+                </form>
+            </div>
+            <div class="transaction-list">
+                <h3>Lịch sử giao dịch</h3>
+                <div id="transactions-container"><p class="status-message">Chưa có giao dịch nào.</p></div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: ADMIN -->
+        <div id="admin-view" class="view">
+            <h1 class="page-header">Quản trị viên</h1>
+            <div class="admin-section">
+                <h2>Quản lý người dùng</h2>
+                <div id="users-container"><p class="status-message">Đang tải...</p></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CREATE PROJECT MODAL -->
+    <div id="create-project-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <h2>Công trình mới</h2>
+            <form id="project-form">
+                <!-- Form fields -->
+                <div class="form-group"><label>Tên công trình *</label><input type="text" id="p-name" required></div>
+                <div class="form-group"><label>Mô tả</label><textarea id="p-desc" rows="2"></textarea></div>
+                <div class="form-group"><label>Địa chỉ</label><input type="text" id="p-address"></div>
+                <div class="form-group"><label>Ngân sách dự kiến *</label><input type="text" id="p-budget" required oninput="formatInputMoney(this)"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancel-p-btn">Hủy</button>
+                    <button type="submit" class="btn-save">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="main-nav">
+        <!-- Nav items -->
+        <button class="nav-item" data-view="overview-view"><span class="icon">🏠</span><span>Tổng quan</span></button>
+        <button class="nav-item active" data-view="projects-view"><span class="icon">📁</span><span>Công trình</span></button>
+        <button class="nav-item hidden" id="admin-nav-btn" data-view="admin-view"><span class="icon">🛡️</span><span>Admin</span></button>
+        <button class="nav-item" id="logout-btn"><span class="icon">🚪</span><span>Đăng xuất</span></button>
+    </nav>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // --- CONFIG & INIT ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBKfEhKahWesUl_JV6mlSWmaKW2LSkKqos",
+          authDomain: "quanlycongtrinh-ab20c.firebaseapp.com",
+          projectId: "quanlycongtrinh-ab20c",
+          storageBucket: "quanlycongtrinh-ab20c.firebasestorage.app",
+          messagingSenderId: "465625666899",
+          appId: "1:465625666899:web:e67ccdfdbc9dc85ad7fda6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null;
+        let currentProjectId = null;
+
+        // --- DOM ELEMENTS ---
+        const welcomeMessage = document.getElementById('welcome-message');
+
+        // --- AUTH STATE LISTENER ---
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                currentUser = userDoc.exists ? { uid: user.uid, ...userDoc.data() } : { uid: user.uid, email: user.email, role: 'user', canCreateProjects: true };
+                
+                // Set Welcome Message
+                welcomeMessage.textContent = `Xin chào, ${currentUser.displayName || currentUser.email}!`;
+
+                // Show/Hide Admin Tab
+                document.getElementById('admin-nav-btn').classList.toggle('hidden', currentUser.role !== 'admin');
+                
+                // Control create button based on permission
+                const createBtn = document.getElementById('show-modal-btn');
+                const canCreate = currentUser.role === 'admin' || currentUser.canCreateProjects;
+                createBtn.classList.toggle('hidden', !canCreate);
+
+                document.querySelector('.nav-item[data-view="projects-view"]').click();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // --- NAVIGATION LOGIC ---
+        const navItems = document.querySelectorAll('.nav-item[data-view]');
+        const views = document.querySelectorAll('.view');
+        const bottomNav = document.getElementById('main-nav');
+
+        function switchView(viewId) {
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            bottomNav.classList.toggle('hidden', viewId === 'project-detail-view');
+            
+            if (viewId !== 'project-detail-view') {
+                 navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-view') === viewId));
+            }
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const viewId = item.getAttribute('data-view');
+                switchView(viewId);
+                if (viewId === 'projects-view') fetchProjects();
+                if (viewId === 'admin-view') loadAdminUsers();
+            });
+        });
+
+        function goBackToProjects() {
+            currentProjectId = null;
+            switchView('projects-view');
+            fetchProjects();
+        }
+
+        // --- UTILS ---
+        const formatMoney = (num) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+        function formatInputMoney(input) {
+            let value = input.value.replace(/\D/g, '');
+            input.value = value ? new Intl.NumberFormat('vi-VN').format(value) : '';
+        }
+        function parseRawMoney(formattedValue) {
+            return parseInt(String(formattedValue).replace(/\D/g, '')) || 0;
+        }
+        const formatDate = (timestamp) => {
+            if (!timestamp) return '';
+            const date = timestamp.toDate();
+            return `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        };
+
+        // --- PROJECTS LIST FUNCTIONS ---
+        async function fetchProjects() {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = `<p class="status-message">Đang tải...</p>`;
+            try {
+                let query = db.collection('projects');
+                if (currentUser.role !== 'admin') {
+                    query = query.where('owner', '==', currentUser.uid);
+                }
+                const snapshot = await query.orderBy('createdAt', 'desc').get();
+                
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="status-message">Bạn chưa có công trình nào.</p>`; return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    const ownerName = p.ownerDisplayName || p.ownerEmail;
+                    const ownerInfo = currentUser.role === 'admin' ? `<div class="project-owner">Sở hữu: ${ownerName || 'Không rõ'}</div>` : '';
+                    const canDelete = currentUser.role === 'admin' || p.owner === currentUser.uid;
+                    const deleteButton = canDelete ? `<button class="delete-button" onclick="deleteProject(event, '${doc.id}', '${p.name}')">🗑️</button>` : '';
+
+                    html += `
+                        <div class="project-card">
+                            ${deleteButton}
+                            <h2>${p.name}</h2>
+                            <p class="description">${p.description || ''}</p>
+                            <div class="info-item"><span class="icon">📍</span> ${p.address || 'Chưa có địa chỉ'}</div>
+                            <div class="info-item"><span class="icon">💰</span> Ngân sách: <span style="color:var(--primary-blue);font-weight:700; margin-left: 5px;">${formatMoney(p.budget)}</span></div>
+                            ${ownerInfo}
+                            <button class="details-button" onclick="openProjectDetail('${doc.id}', '${p.name}')">Xem chi tiết & Thu/Chi</button>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            } catch (error) { 
+                console.error(error); 
+                container.innerHTML = `<p class="status-message text-red">Lỗi tải dữ liệu. ${error.message.includes('index') ? 'Vui lòng tạo chỉ mục (index) trong Firestore.' : ''}</p>`;
+            }
+        }
+
+        // --- PROJECT MANAGEMENT ---
+        const pModal = document.getElementById('create-project-modal');
+        document.getElementById('show-modal-btn').onclick = () => pModal.classList.remove('hidden');
+        document.getElementById('cancel-p-btn').onclick = () => pModal.classList.add('hidden');
+        document.getElementById('project-form').onsubmit = async (e) => {
+            e.preventDefault();
+            try {
+                await db.collection('projects').add({
+                    name: document.getElementById('p-name').value,
+                    description: document.getElementById('p-desc').value,
+                    address: document.getElementById('p-address').value,
+                    budget: parseRawMoney(document.getElementById('p-budget').value),
+                    owner: currentUser.uid,
+                    ownerEmail: currentUser.email,
+                    ownerDisplayName: currentUser.displayName || null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                pModal.classList.add('hidden'); e.target.reset();
+                fetchProjects();
+            } catch (err) { alert('Lỗi: ' + err.message); }
+        };
+
+        async function deleteProject(e, id, name) {
+            e.stopPropagation();
+            if (confirm(`Bạn có chắc muốn xóa công trình "${name}" và toàn bộ dữ liệu thu chi liên quan không?`)) {
+                await db.collection('projects').doc(id).delete();
+                fetchProjects();
+            }
+        }
+
+        // --- PROJECT DETAIL & TRANSACTIONS ---
+        async function openProjectDetail(projectId, projectName) {
+            currentProjectId = projectId;
+            document.getElementById('detail-project-name').textContent = projectName;
+            switchView('project-detail-view');
+            loadTransactions();
+        }
+
+        let unsubscribeTransactions = null;
+        function loadTransactions() {
+            if (unsubscribeTransactions) unsubscribeTransactions();
+            const container = document.getElementById('transactions-container');
+            container.innerHTML = `<p class="status-message">Đang tải giao dịch...</p>`;
+            unsubscribeTransactions = db.collection('projects').doc(currentProjectId).collection('transactions').orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    let thu = 0, chi = 0;
+                    let html = snapshot.empty ? `<p class="status-message">Chưa có giao dịch nào.</p>` : '';
+                    snapshot.forEach(doc => {
+                        const t = doc.data();
+                        const isThu = t.type === 'thu';
+                        const amount = t.amount || 0;
+                        if (isThu) thu += amount; else chi += amount;
+                        html += `
+                            <div class="transaction-item">
+                                <div class="t-info">
+                                    <div class="t-desc">${t.description}</div>
+                                    <div class="t-date">${formatDate(t.createdAt)}</div>
+                                </div>
+                                <div class="t-amount ${isThu ? 'text-green' : 'text-red'}">
+                                    ${isThu ? '+' : '-'}${formatMoney(amount)}
+                                </div>
+                            </div>`;
+                    });
+                    container.innerHTML = html;
+                    document.getElementById('sum-thu').textContent = formatMoney(thu);
+                    document.getElementById('sum-chi').textContent = formatMoney(chi);
+                    document.getElementById('sum-balance').textContent = formatMoney(thu - chi);
+                }, error => {
+                    console.error("Tx Error:", error);
+                    container.innerHTML = `<p class="status-message text-red">Lỗi tải giao dịch. Vui lòng kiểm tra Security Rules.</p>`;
+                });
+        }
+        
+        document.getElementById('transaction-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const amountRaw = parseRawMoney(document.getElementById('t-amount').value);
+            if (amountRaw <= 0) return alert('Vui lòng nhập số tiền hợp lệ.');
+            try {
+                await db.collection('projects').doc(currentProjectId).collection('transactions').add({
+                    type: document.getElementById('t-type').value,
+                    amount: amountRaw,
+                    description: document.getElementById('t-desc').value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                e.target.reset();
+            } catch (err) { alert('Lỗi thêm giao dịch. Quan trọng: Hãy chắc chắn bạn đã cập nhật Security Rules cho phép admin ghi dữ liệu.'); }
+        };
+
+        // --- ADMIN FUNCTIONS ---
+        async function loadAdminUsers() {
+            if (currentUser.role !== 'admin') return;
+            const container = document.getElementById('users-container');
+            const snap = await db.collection('users').get();
+            let html = '';
+            snap.forEach(doc => {
+                const u = doc.data();
+                const uId = doc.id;
+                if (uId === currentUser.uid) return;
+
+                const canCreate = u.canCreateProjects !== false;
+                html += `<div class="user-card">
+                    <div class="user-details">
+                        <div class="display-name">${u.displayName || '(Chưa đặt tên)'}</div>
+                        <div class="email">${u.email}</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn-set-name" onclick="setDisplayName('${uId}')">Đặt tên</button>
+                        <div class="permission-toggle">
+                            <span class="toggle-label">Cấp quyền</span>
+                            <label class="switch">
+                                <input type="checkbox" ${canCreate ? 'checked' : ''} onchange="toggleCreatePermission('${uId}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html || '<p>Không có người dùng nào khác.</p>';
+        }
+
+        async function setDisplayName(userId) {
+            const currentName = await db.collection('users').doc(userId).get().then(doc => doc.data().displayName || '');
+            const newName = prompt("Nhập tên hiển thị mới cho người dùng:", currentName);
+            if (newName !== null) { // User clicked OK, even if it's empty
+                try {
+                    await db.collection('users').doc(userId).update({ displayName: newName.trim() });
+                    loadAdminUsers();
+                } catch(err) {
+                    console.error("Failed to set name: ", err);
+                    alert("Không thể đặt tên. Vui lòng thử lại.");
+                }
+            }
+        }
+
+        async function toggleCreatePermission(userId, canCreate) {
+             if (currentUser.role !== 'admin') return;
+             try {
+                await db.collection('users').doc(userId).update({ canCreateProjects: canCreate });
+             } catch(err) {
+                console.error("Failed to update permission: ", err);
+                alert("Không thể cập nhật quyền. Vui lòng thử lại.");
+                loadAdminUsers();
+             }
+        }
+
+        document.getElementById('logout-btn').onclick = () => auth.signOut();
+    </script>
+</body>
+</html>

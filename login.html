@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Quản lý Công trình</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --light-gray: #f8f9fa;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: var(--light-gray);
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            margin: 1rem;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 2rem;
+            color: #212529;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 0.5rem;
+        }
+        .btn-login {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        .btn-login:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-register {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-register:hover {
+             background-color: #5a6268;
+        }
+        #error-message {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 14px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Chào mừng bạn</h1>
+        <div class="input-group">
+            <input type="email" id="email-input" placeholder="Email" required>
+        </div>
+        <div class="input-group">
+            <input type="password" id="password-input" placeholder="Mật khẩu" required>
+        </div>
+        <p id="error-message"></p>
+        <button id="login-btn" class="btn-login">Đăng nhập</button>
+        <button id="register-btn" class="btn-register">Đăng ký</button>
+    </div>
+
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBKfEhKahWesUl_JV6mlSWmaKW2LSkKqos",
+          authDomain: "quanlycongtrinh-ab20c.firebaseapp.com",
+          projectId: "quanlycongtrinh-ab20c",
+          storageBucket: "quanlycongtrinh-ab20c.firebasestorage.app",
+          messagingSenderId: "465625666899",
+          appId: "1:465625666899:web:e67ccdfdbc9dc85ad7fda6"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- DOM Elements ---
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const errorMessage = document.getElementById('error-message');
+
+        // --- REDIRECT IF ALREADY LOGGED IN ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log('User already logged in, redirecting...');
+                window.location.href = 'index.html';
+            }
+        });
+
+        // --- FUNCTIONS ---
+        const handleLogin = async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            errorMessage.textContent = ''; // Clear previous errors
+
+            if (!email || !password) {
+                errorMessage.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // The onAuthStateChanged listener will handle the redirect
+            } catch (error) {
+                console.error("Login Error:", error.code);
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage.textContent = 'Email hoặc mật khẩu không chính xác.';
+                } else {
+                    errorMessage.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                }
+            }
+        };
+
+        const handleRegister = async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            errorMessage.textContent = '';
+
+            if (!email || !password) {
+                errorMessage.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
+                return;
+            }
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Create a document in 'users' collection for the new user
+                await db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    role: 'user' // Default role
+                });
+                
+                // The onAuthStateChanged listener will handle the redirect
+            } catch (error) {
+                console.error("Register Error:", error.code);
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage.textContent = 'Email này đã được sử dụng.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+                } else {
+                    errorMessage.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                }
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        loginBtn.addEventListener('click', handleLogin);
+        registerBtn.addEventListener('click', handleRegister);
+    </script>
+</body>
+</html>
