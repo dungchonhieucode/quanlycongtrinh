@@ -26,7 +26,7 @@
         body { margin: 0; font-family: 'Be Vietnam Pro', sans-serif; background-color: var(--light-gray); color: var(--text-dark); line-height: 1.6; }
         .container { padding: 20px; padding-bottom: 100px; max-width: 800px; margin: 0 auto; }
         .page-header { font-size: 32px; font-weight: 700; margin: 0 0 28px 0; display: flex; align-items: center; }
-        .welcome-header { font-size: 20px; font-weight: 500; color: var(--text-secondary); margin-bottom: 24px; }
+        .welcome-header { font-size: 16px; font-weight: 500; color: var(--text-secondary); margin-bottom: 16px; }
         .back-button, .hamburger-btn { background: none; border: none; font-size: 28px; margin-right: 12px; cursor: pointer; color: var(--text-dark); }
         .status-message { text-align: center; color: var(--text-secondary); padding: 50px 0; }
         .text-green { color: var(--success-green); }
@@ -46,6 +46,9 @@
         .stat-card .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
         .stat-card .value { font-size: 24px; font-weight: 700; }
         .stat-card.full-width { grid-column: 1 / -1; }
+        @media (max-width: 600px) {
+            .overview-grid { grid-template-columns: 1fr; }
+        }
 
         /* --- Project List View --- */
         .create-button { display: flex; align-items: center; justify-content: center; width: 100%; padding: 18px; margin-bottom: 28px; font-size: 18px; font-weight: 700; color: var(--white); background-image: linear-gradient(to right, var(--primary-blue), #3b82f6); border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); transition: all 0.2s ease; }
@@ -62,13 +65,22 @@
         .project-card .delete-button:hover { opacity: 1; }
         .project-owner { font-size: 12px; background-color: #eef2ff; color: #4338ca; padding: 4px 10px; border-radius: 99px; font-weight: 500; margin-top: 16px; display: inline-block; }
 
+        /* --- Search Section --- */
+        .search-section { margin-top: 40px; background-color: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow-md); }
+        .search-section h2 { margin-top: 0; }
+        .search-result-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--light-gray); cursor: pointer; }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:hover { background-color: #f9fafb; }
+        .search-result-item .info .project-name { font-size: 12px; color: var(--primary-blue); font-weight: 500; margin-top: 4px; }
+
         /* --- Project Detail View --- */
         .finance-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
         .finance-card { background: var(--white); padding: 16px 12px; border-radius: 12px; text-align: center; box-shadow: var(--shadow-sm); }
         .finance-card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
         .finance-card .value { font-weight: 700; font-size: 16px; }
-        .finance-balance-card { grid-column: 1 / -1; margin-bottom: 28px; }
-        .finance-balance-card .value { font-size: 22px; }
+        .finance-balance-card { grid-column: 1 / -1; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; }
+        .finance-balance-card .label { font-size: 14px; margin-bottom: 0; }
+        .finance-balance-card .value { font-size: 18px; }
 
         .transaction-tabs { display: flex; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
         .tab-btn { flex: 1; padding: 14px; font-size: 16px; font-weight: 500; text-align: center; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-bottom: 3px solid transparent; }
@@ -148,6 +160,15 @@
             <h1 class="page-header">Công trình</h1>
             <button class="create-button" id="show-modal-btn"><span class="plus-icon">+</span> Tạo công trình mới</button>
             <div id="projects-container"><p class="status-message">Đang tải...</p></div>
+
+            <!-- NEW SEARCH SECTION -->
+            <div class="search-section">
+                <h2>Tìm kiếm Giao dịch</h2>
+                <input type="search" id="transaction-search-input" class="form-input" placeholder="Nhập mô tả để tìm...">
+                <div id="search-results-container">
+                    <p class="status-message">Nhập để bắt đầu tìm kiếm trong tất cả công trình.</p>
+                </div>
+            </div>
         </div>
 
         <!-- VIEW 3: PROJECT DETAIL (THU/CHI) -->
@@ -307,9 +328,16 @@
         }
         function parseRawMoney(formattedValue) { return parseInt(String(formattedValue).replace(/\D/g, '')) || 0; }
         const formatDate = (timestamp) => {
-            if (!timestamp) return '';
+            if (!timestamp || !timestamp.toDate) return 'Không có ngày';
             const date = timestamp.toDate();
             return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        };
+        const debounce = (func, delay) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), delay);
+            };
         };
 
         // --- OVERVIEW FUNCTIONS ---
@@ -323,14 +351,8 @@
                 }
                 const projectSnap = await projectQuery.get();
                 
-                let totalProjects = 0;
-                let totalBudget = 0;
-                let totalThu = 0;
-                let totalChi = 0;
-                let todayThu = 0;
-                let todayChi = 0;
-                let monthThu = 0;
-                let monthChi = 0;
+                let totalProjects = 0, totalBudget = 0, totalThu = 0, totalChi = 0;
+                let todayThu = 0, todayChi = 0, monthThu = 0, monthChi = 0;
 
                 const todayStart = new Date();
                 todayStart.setHours(0, 0, 0, 0);
@@ -342,7 +364,7 @@
                     const txSnap = await db.collection('projects').doc(doc.id).collection('transactions').get();
                     txSnap.forEach(txDoc => {
                         const tx = txDoc.data();
-                        const txDate = tx.createdAt.toDate();
+                        const txDate = tx.createdAt ? tx.createdAt.toDate() : new Date();
                         if (tx.type === 'thu') {
                             totalThu += tx.amount;
                             if (txDate >= todayStart) todayThu += tx.amount;
@@ -386,8 +408,7 @@
                     container.innerHTML = `<p class="status-message">Bạn chưa có công trình nào.</p>`; return;
                 }
                 
-                let html = '';
-                let sidePanelHtml = '';
+                let html = '', sidePanelHtml = '';
                 snapshot.forEach(doc => {
                     const p = doc.data();
                     const canDelete = currentUser.role === 'admin' || p.owner === currentUser.uid;
@@ -525,6 +546,81 @@
             e.preventDefault();
             handleTransactionSubmit('chi', 't-amount-chi', 't-desc-chi', e.target);
         };
+
+        // --- GLOBAL TRANSACTION SEARCH ---
+        const searchAllTransactions = async (event) => {
+            const searchTerm = event.target.value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('search-results-container');
+            
+            if (!searchTerm) {
+                resultsContainer.innerHTML = '<p class="status-message">Nhập để bắt đầu tìm kiếm trong tất cả công trình.</p>';
+                return;
+            }
+            
+            resultsContainer.innerHTML = '<p class="status-message">Đang tìm kiếm...</p>';
+            
+            try {
+                let projectQuery = db.collection('projects');
+                if (currentUser.role !== 'admin') {
+                    projectQuery = projectQuery.where('owner', '==', currentUser.uid);
+                }
+                const projectSnap = await projectQuery.get();
+                if (projectSnap.empty) {
+                    resultsContainer.innerHTML = '<p class="status-message">Không có công trình nào để tìm kiếm.</p>';
+                    return;
+                }
+                
+                const transactionPromises = projectSnap.docs.map(pDoc => 
+                    db.collection('projects').doc(pDoc.id).collection('transactions').get().then(txSnap => ({
+                        projectId: pDoc.id,
+                        projectName: pDoc.data().name,
+                        transactions: txSnap.docs.map(txDoc => txDoc.data())
+                    }))
+                );
+                
+                const projectsWithTransactions = await Promise.all(transactionPromises);
+                
+                const allTransactions = [];
+                projectsWithTransactions.forEach(project => {
+                    project.transactions.forEach(tx => {
+                        if (tx.description.toLowerCase().includes(searchTerm)) {
+                            allTransactions.push({ ...tx, projectName: project.projectName, projectId: project.projectId });
+                        }
+                    });
+                });
+
+                if (allTransactions.length === 0) {
+                    resultsContainer.innerHTML = '<p class="status-message">Không tìm thấy giao dịch nào phù hợp.</p>';
+                    return;
+                }
+                
+                // Sort results by date, most recent first
+                allTransactions.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                let html = '';
+                allTransactions.forEach(t => {
+                    const isThu = t.type === 'thu';
+                    html += `
+                        <div class="search-result-item" onclick="openProjectDetail('${t.projectId}', '${t.projectName}')">
+                            <div class="info">
+                                <div class="t-desc">${t.description}</div>
+                                <div class="t-date">${formatDate(t.createdAt)}</div>
+                                <div class="project-name">Công trình: ${t.projectName}</div>
+                            </div>
+                            <div class="t-amount ${isThu ? 'text-green' : 'text-red'}">
+                                ${isThu ? '+' : '-'}${formatMoney(t.amount)}
+                            </div>
+                        </div>`;
+                });
+                resultsContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.error("Search Error:", error);
+                resultsContainer.innerHTML = '<p class="status-message text-red">Đã xảy ra lỗi khi tìm kiếm.</p>';
+            }
+        };
+        
+        document.getElementById('transaction-search-input').addEventListener('input', debounce(searchAllTransactions, 500));
 
         // --- SIDE PANEL ---
         function toggleSidePanel() {
