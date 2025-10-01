@@ -9,14 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         /* --- General Styles --- */
-        :root { 
-            --primary-blue: #2563eb; 
+        :root {
+            --primary-blue: #2563eb;
             --primary-blue-dark: #1d4ed8;
-            --success-green: #22c55e; 
-            --danger-red: #ef4444; 
-            --light-gray: #f3f4f6; 
-            --text-dark: #1f2937; 
-            --text-secondary: #6b7280; 
+            --success-green: #22c55e;
+            --danger-red: #ef4444;
+            --light-gray: #f3f4f6;
+            --text-dark: #1f2937;
+            --text-secondary: #6b7280;
             --white: #ffffff;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -27,7 +27,7 @@
         .container { padding: 20px; padding-bottom: 100px; max-width: 800px; margin: 0 auto; }
         .page-header { font-size: 32px; font-weight: 700; margin: 0 0 28px 0; display: flex; align-items: center; }
         .welcome-header { font-size: 20px; font-weight: 500; color: var(--text-secondary); margin-bottom: 24px; }
-        .back-button { background: none; border: none; font-size: 28px; margin-right: 12px; cursor: pointer; color: var(--text-dark); }
+        .back-button, .hamburger-btn { background: none; border: none; font-size: 28px; margin-right: 12px; cursor: pointer; color: var(--text-dark); }
         .status-message { text-align: center; color: var(--text-secondary); padding: 50px 0; }
         .text-green { color: var(--success-green); }
         .text-red { color: var(--danger-red); }
@@ -39,6 +39,13 @@
         /* --- Views --- */
         .view.active { display: block; }
         .view { display: none; }
+
+        /* --- Overview View --- */
+        .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .stat-card { background-color: var(--white); padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); }
+        .stat-card .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+        .stat-card .value { font-size: 24px; font-weight: 700; }
+        .stat-card.full-width { grid-column: 1 / -1; }
 
         /* --- Project List View --- */
         .create-button { display: flex; align-items: center; justify-content: center; width: 100%; padding: 18px; margin-bottom: 28px; font-size: 18px; font-weight: 700; color: var(--white); background-image: linear-gradient(to right, var(--primary-blue), #3b82f6); border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); transition: all 0.2s ease; }
@@ -55,15 +62,20 @@
         .project-card .delete-button:hover { opacity: 1; }
         .project-owner { font-size: 12px; background-color: #eef2ff; color: #4338ca; padding: 4px 10px; border-radius: 99px; font-weight: 500; margin-top: 16px; display: inline-block; }
 
-        /* --- Project Detail View (Mobile Optimized Thu/Chi) --- */
-        .finance-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+        /* --- Project Detail View --- */
+        .finance-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
         .finance-card { background: var(--white); padding: 16px 12px; border-radius: 12px; text-align: center; box-shadow: var(--shadow-sm); }
-        .finance-card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
-        .finance-card .value { font-weight: 700; font-size: 18px; }
+        .finance-card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+        .finance-card .value { font-weight: 700; font-size: 16px; }
+        .finance-balance-card { grid-column: 1 / -1; margin-bottom: 28px; }
+        .finance-balance-card .value { font-size: 22px; }
+
+        .transaction-tabs { display: flex; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+        .tab-btn { flex: 1; padding: 14px; font-size: 16px; font-weight: 500; text-align: center; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--primary-blue); border-bottom-color: var(--primary-blue); }
         .add-transaction-form { background: var(--white); padding: 20px; border-radius: 16px; margin-bottom: 28px; box-shadow: var(--shadow-md); }
-        .add-transaction-form h3 { margin-top: 0; margin-bottom: 16px; }
         .form-row { margin-bottom: 16px; }
-        .transaction-type-select, .form-input { padding: 16px; border-radius: 10px; border: 1px solid #d1d5db; font-family: inherit; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .form-input { padding: 16px; border-radius: 10px; border: 1px solid #d1d5db; font-family: inherit; font-size: 16px; width: 100%; box-sizing: border-box; }
         .add-btn { background-color: var(--primary-blue); color: white; border: none; cursor: pointer; width: 100%; padding: 18px; font-size: 18px; font-weight: 700; border-radius: 10px; transition: background-color 0.2s; }
         .add-btn:hover { background-color: var(--primary-blue-dark); }
         .transaction-list h3 { margin-bottom: 12px; font-size: 20px; }
@@ -92,8 +104,9 @@
         input:checked + .slider { background-color: var(--success-green); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* --- Modals & Bottom Nav --- */
-        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+        /* --- Modals, Navs, Side Panel --- */
+        .modal-backdrop, .side-panel-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 100; animation: fadeIn 0.3s; }
+        .modal-backdrop { display: flex; align-items: center; justify-content: center; }
         .modal { background: #fff; border-radius: 16px; padding: 28px; width: 90%; max-width: 450px; z-index: 101; box-shadow: var(--shadow-lg); }
         .modal h2 { margin-top: 0; font-size: 24px; }
         .form-group { margin-bottom: 16px; }
@@ -105,6 +118,13 @@
         .btn-save:hover { background-color: var(--primary-blue-dark); }
         .btn-cancel { background-color: #e5e7eb; }
         .btn-cancel:hover { background-color: #d1d5db; }
+        
+        .side-panel { position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--white); z-index: 110; box-shadow: var(--shadow-lg); transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        .side-panel.open { transform: translateX(0); }
+        .side-panel-header { padding: 20px; font-size: 20px; font-weight: 700; border-bottom: 1px solid #e5e7eb; }
+        .side-panel-list a { display: block; padding: 15px 20px; text-decoration: none; color: var(--text-dark); border-bottom: 1px solid #f3f4f6; }
+        .side-panel-list a:hover { background-color: var(--light-gray); }
+
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--white); border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08); z-index: 90; }
         .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-secondary); font-size: 12px; font-weight: 500; border: none; background: none; cursor: pointer; padding: 0 10px; transition: color 0.2s; }
         .nav-item .icon { font-size: 28px; margin-bottom: 4px; }
@@ -118,7 +138,9 @@
         <!-- VIEW 1: OVERVIEW -->
         <div id="overview-view" class="view">
             <h1 class="page-header">Tổng quan</h1>
-            <!-- Overview content... -->
+            <div id="overview-container" class="overview-grid">
+                <p class="status-message full-width">Đang tải dữ liệu tổng quan...</p>
+            </div>
         </div>
 
         <!-- VIEW 2: PROJECTS LIST -->
@@ -131,33 +153,39 @@
         <!-- VIEW 3: PROJECT DETAIL (THU/CHI) -->
         <div id="project-detail-view" class="view">
             <header class="page-header">
+                <button class="hamburger-btn" onclick="toggleSidePanel()">☰</button>
                 <button class="back-button" onclick="goBackToProjects()">←</button>
                 <span id="detail-project-name">Tên công trình</span>
             </header>
              <div class="finance-summary">
                 <div class="finance-card"><div class="label">Tổng Thu</div><div class="value text-green" id="sum-thu">0 đ</div></div>
                 <div class="finance-card"><div class="label">Tổng Chi</div><div class="value text-red" id="sum-chi">0 đ</div></div>
-                <div class="finance-card"><div class="label">Số dư</div><div class="value" id="sum-balance">0 đ</div></div>
             </div>
-            <div class="add-transaction-form">
-                <h3>Thêm giao dịch mới</h3>
-                <form id="transaction-form">
-                    <!-- Form fields -->
-                    <div class="form-row">
-                         <select id="t-type" class="transaction-type-select">
-                            <option value="thu">Thu (+)</option>
-                            <option value="chi">Chi (-)</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="t-amount" class="form-input" placeholder="Số tiền (VNĐ)" required oninput="formatInputMoney(this)">
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="t-desc" class="form-input" placeholder="Mô tả (VD: Ứng tiền, Mua vật tư)" required>
-                    </div>
-                    <button type="submit" class="add-btn">Thêm giao dịch</button>
+            <div class="finance-card finance-balance-card">
+                <div class="label">Số dư</div>
+                <div class="value" id="sum-balance">0 đ</div>
+            </div>
+
+            <div class="transaction-tabs">
+                <button class="tab-btn active" onclick="switchTransactionTab('thu', this)">Thêm Khoản Thu</button>
+                <button class="tab-btn" onclick="switchTransactionTab('chi', this)">Thêm Khoản Chi</button>
+            </div>
+
+            <div id="thu-form-container" class="add-transaction-form">
+                <form id="transaction-form-thu">
+                    <div class="form-row"><input type="text" id="t-amount-thu" class="form-input" placeholder="Số tiền Thu (VNĐ)" required oninput="formatInputMoney(this)"></div>
+                    <div class="form-row"><input type="text" id="t-desc-thu" class="form-input" placeholder="Mô tả (VD: Chủ nhà ứng tiền)" required></div>
+                    <button type="submit" class="add-btn">Thêm Khoản Thu</button>
                 </form>
             </div>
+            <div id="chi-form-container" class="add-transaction-form hidden">
+                 <form id="transaction-form-chi">
+                    <div class="form-row"><input type="text" id="t-amount-chi" class="form-input" placeholder="Số tiền Chi (VNĐ)" required oninput="formatInputMoney(this)"></div>
+                    <div class="form-row"><input type="text" id="t-desc-chi" class="form-input" placeholder="Mô tả (VD: Mua vật tư, Trả lương)" required></div>
+                    <button type="submit" class="add-btn">Thêm Khoản Chi</button>
+                </form>
+            </div>
+
             <div class="transaction-list">
                 <h3>Lịch sử giao dịch</h3>
                 <div id="transactions-container"><p class="status-message">Chưa có giao dịch nào.</p></div>
@@ -179,7 +207,6 @@
         <div class="modal">
             <h2>Công trình mới</h2>
             <form id="project-form">
-                <!-- Form fields -->
                 <div class="form-group"><label>Tên công trình *</label><input type="text" id="p-name" required></div>
                 <div class="form-group"><label>Mô tả</label><textarea id="p-desc" rows="2"></textarea></div>
                 <div class="form-group"><label>Địa chỉ</label><input type="text" id="p-address"></div>
@@ -192,15 +219,20 @@
         </div>
     </div>
 
+    <!-- HAMBURGER SIDE PANEL -->
+    <div id="side-panel-backdrop" class="side-panel-backdrop hidden" onclick="toggleSidePanel()"></div>
+    <div id="project-side-panel" class="side-panel">
+        <div class="side-panel-header">Chuyển công trình</div>
+        <div id="side-panel-project-list" class="side-panel-list"></div>
+    </div>
+
     <nav class="bottom-nav" id="main-nav">
-        <!-- Nav items -->
         <button class="nav-item" data-view="overview-view"><span class="icon">🏠</span><span>Tổng quan</span></button>
         <button class="nav-item active" data-view="projects-view"><span class="icon">📁</span><span>Công trình</span></button>
         <button class="nav-item hidden" id="admin-nav-btn" data-view="admin-view"><span class="icon">🛡️</span><span>Admin</span></button>
         <button class="nav-item" id="logout-btn"><span class="icon">🚪</span><span>Đăng xuất</span></button>
     </nav>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -208,12 +240,12 @@
     <script>
         // --- CONFIG & INIT ---
         const firebaseConfig = {
-          apiKey: "AIzaSyBKfEhKahWesUl_JV6mlSWmaKW2LSkKqos",
-          authDomain: "quanlycongtrinh-ab20c.firebaseapp.com",
-          projectId: "quanlycongtrinh-ab20c",
-          storageBucket: "quanlycongtrinh-ab20c.firebasestorage.app",
-          messagingSenderId: "465625666899",
-          appId: "1:465625666899:web:e67ccdfdbc9dc85ad7fda6"
+            apiKey: "AIzaSyBKfEhKahWesUl_JV6mlSWmaKW2LSkKqos",
+            authDomain: "quanlycongtrinh-ab20c.firebaseapp.com",
+            projectId: "quanlycongtrinh-ab20c",
+            storageBucket: "quanlycongtrinh-ab20c.firebasestorage.app",
+            messagingSenderId: "465625666899",
+            appId: "1:465625666899:web:e67ccdfdbc9dc85ad7fda6"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -221,26 +253,16 @@
         let currentUser = null;
         let currentProjectId = null;
 
-        // --- DOM ELEMENTS ---
-        const welcomeMessage = document.getElementById('welcome-message');
-
         // --- AUTH STATE LISTENER ---
         auth.onAuthStateChanged(async user => {
             if (user) {
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 currentUser = userDoc.exists ? { uid: user.uid, ...userDoc.data() } : { uid: user.uid, email: user.email, role: 'user', canCreateProjects: true };
-                
-                // Set Welcome Message
-                welcomeMessage.textContent = `Xin chào, ${currentUser.displayName || currentUser.email}!`;
-
-                // Show/Hide Admin Tab
+                document.getElementById('welcome-message').textContent = `Xin chào, ${currentUser.displayName || currentUser.email}!`;
                 document.getElementById('admin-nav-btn').classList.toggle('hidden', currentUser.role !== 'admin');
-                
-                // Control create button based on permission
                 const createBtn = document.getElementById('show-modal-btn');
                 const canCreate = currentUser.role === 'admin' || currentUser.canCreateProjects;
                 createBtn.classList.toggle('hidden', !canCreate);
-
                 document.querySelector('.nav-item[data-view="projects-view"]').click();
             } else {
                 window.location.href = 'login.html';
@@ -255,11 +277,9 @@
         function switchView(viewId) {
             views.forEach(view => view.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            
             bottomNav.classList.toggle('hidden', viewId === 'project-detail-view');
-            
             if (viewId !== 'project-detail-view') {
-                 navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-view') === viewId));
+                navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-view') === viewId));
             }
         }
 
@@ -267,6 +287,7 @@
             item.addEventListener('click', () => {
                 const viewId = item.getAttribute('data-view');
                 switchView(viewId);
+                if (viewId === 'overview-view') fetchOverviewData();
                 if (viewId === 'projects-view') fetchProjects();
                 if (viewId === 'admin-view') loadAdminUsers();
             });
@@ -284,19 +305,76 @@
             let value = input.value.replace(/\D/g, '');
             input.value = value ? new Intl.NumberFormat('vi-VN').format(value) : '';
         }
-        function parseRawMoney(formattedValue) {
-            return parseInt(String(formattedValue).replace(/\D/g, '')) || 0;
-        }
+        function parseRawMoney(formattedValue) { return parseInt(String(formattedValue).replace(/\D/g, '')) || 0; }
         const formatDate = (timestamp) => {
             if (!timestamp) return '';
             const date = timestamp.toDate();
-            return `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         };
 
+        // --- OVERVIEW FUNCTIONS ---
+        async function fetchOverviewData() {
+            const container = document.getElementById('overview-container');
+            container.innerHTML = `<p class="status-message full-width">Đang tải dữ liệu...</p>`;
+            try {
+                let projectQuery = db.collection('projects');
+                if (currentUser.role !== 'admin') {
+                    projectQuery = projectQuery.where('owner', '==', currentUser.uid);
+                }
+                const projectSnap = await projectQuery.get();
+                
+                let totalProjects = 0;
+                let totalBudget = 0;
+                let totalThu = 0;
+                let totalChi = 0;
+                let todayThu = 0;
+                let todayChi = 0;
+                let monthThu = 0;
+                let monthChi = 0;
+
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+
+                for (const doc of projectSnap.docs) {
+                    totalProjects++;
+                    totalBudget += doc.data().budget || 0;
+                    const txSnap = await db.collection('projects').doc(doc.id).collection('transactions').get();
+                    txSnap.forEach(txDoc => {
+                        const tx = txDoc.data();
+                        const txDate = tx.createdAt.toDate();
+                        if (tx.type === 'thu') {
+                            totalThu += tx.amount;
+                            if (txDate >= todayStart) todayThu += tx.amount;
+                            if (txDate >= monthStart) monthThu += tx.amount;
+                        } else {
+                            totalChi += tx.amount;
+                            if (txDate >= todayStart) todayChi += tx.amount;
+                            if (txDate >= monthStart) monthChi += tx.amount;
+                        }
+                    });
+                }
+
+                container.innerHTML = `
+                    <div class="stat-card"><div class="label">Số công trình</div><div class="value">${totalProjects}</div></div>
+                    <div class="stat-card"><div class="label">Tổng ngân sách</div><div class="value">${formatMoney(totalBudget)}</div></div>
+                    <div class="stat-card full-width"><div class="label">Tổng Thu</div><div class="value text-green">${formatMoney(totalThu)}</div></div>
+                    <div class="stat-card full-width"><div class="label">Tổng Chi</div><div class="value text-red">${formatMoney(totalChi)}</div></div>
+                    <div class="stat-card"><div class="label">Thu hôm nay</div><div class="value text-green">${formatMoney(todayThu)}</div></div>
+                    <div class="stat-card"><div class="label">Chi hôm nay</div><div class="value text-red">${formatMoney(todayChi)}</div></div>
+                    <div class="stat-card"><div class="label">Thu tháng này</div><div class="value text-green">${formatMoney(monthThu)}</div></div>
+                    <div class="stat-card"><div class="label">Chi tháng này</div><div class="value text-red">${formatMoney(monthChi)}</div></div>
+                `;
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<p class="status-message text-red full-width">Lỗi tải dữ liệu tổng quan.</p>`;
+            }
+        }
+
         // --- PROJECTS LIST FUNCTIONS ---
-        async function fetchProjects() {
+        async function fetchProjects(populateSidePanel = false) {
             const container = document.getElementById('projects-container');
-            container.innerHTML = `<p class="status-message">Đang tải...</p>`;
+            if (!populateSidePanel) container.innerHTML = `<p class="status-message">Đang tải...</p>`;
             try {
                 let query = db.collection('projects');
                 if (currentUser.role !== 'admin') {
@@ -304,16 +382,17 @@
                 }
                 const snapshot = await query.orderBy('createdAt', 'desc').get();
                 
-                if (snapshot.empty) {
+                if (snapshot.empty && !populateSidePanel) {
                     container.innerHTML = `<p class="status-message">Bạn chưa có công trình nào.</p>`; return;
                 }
+                
                 let html = '';
+                let sidePanelHtml = '';
                 snapshot.forEach(doc => {
                     const p = doc.data();
-                    const ownerName = p.ownerDisplayName || p.ownerEmail;
-                    const ownerInfo = currentUser.role === 'admin' ? `<div class="project-owner">Sở hữu: ${ownerName || 'Không rõ'}</div>` : '';
                     const canDelete = currentUser.role === 'admin' || p.owner === currentUser.uid;
                     const deleteButton = canDelete ? `<button class="delete-button" onclick="deleteProject(event, '${doc.id}', '${p.name}')">🗑️</button>` : '';
+                    const ownerInfo = currentUser.role === 'admin' ? `<div class="project-owner">Sở hữu: ${p.ownerDisplayName || p.ownerEmail || 'Không rõ'}</div>` : '';
 
                     html += `
                         <div class="project-card">
@@ -325,10 +404,14 @@
                             ${ownerInfo}
                             <button class="details-button" onclick="openProjectDetail('${doc.id}', '${p.name}')">Xem chi tiết & Thu/Chi</button>
                         </div>`;
+                    
+                    sidePanelHtml += `<a href="#" onclick="switchProjectDetail('${doc.id}', '${p.name}')">${p.name}</a>`;
                 });
-                container.innerHTML = html;
-            } catch (error) { 
-                console.error(error); 
+
+                if (!populateSidePanel) container.innerHTML = html;
+                document.getElementById('side-panel-project-list').innerHTML = sidePanelHtml;
+            } catch (error) {
+                console.error(error);
                 container.innerHTML = `<p class="status-message text-red">Lỗi tải dữ liệu. ${error.message.includes('index') ? 'Vui lòng tạo chỉ mục (index) trong Firestore.' : ''}</p>`;
             }
         }
@@ -369,6 +452,14 @@
             document.getElementById('detail-project-name').textContent = projectName;
             switchView('project-detail-view');
             loadTransactions();
+            fetchProjects(true); // Populate side panel
+        }
+        
+        function switchProjectDetail(projectId, projectName) {
+             if (currentProjectId !== projectId) {
+                openProjectDetail(projectId, projectName);
+            }
+            toggleSidePanel();
         }
 
         let unsubscribeTransactions = null;
@@ -402,24 +493,44 @@
                     document.getElementById('sum-balance').textContent = formatMoney(thu - chi);
                 }, error => {
                     console.error("Tx Error:", error);
-                    container.innerHTML = `<p class="status-message text-red">Lỗi tải giao dịch. Vui lòng kiểm tra Security Rules.</p>`;
+                    container.innerHTML = `<p class="status-message text-red">Lỗi tải giao dịch.</p>`;
                 });
         }
+
+        function switchTransactionTab(type, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('thu-form-container').classList.toggle('hidden', type !== 'thu');
+            document.getElementById('chi-form-container').classList.toggle('hidden', type !== 'chi');
+        }
         
-        document.getElementById('transaction-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const amountRaw = parseRawMoney(document.getElementById('t-amount').value);
+        async function handleTransactionSubmit(type, amountElId, descElId, form) {
+            const amountRaw = parseRawMoney(document.getElementById(amountElId).value);
             if (amountRaw <= 0) return alert('Vui lòng nhập số tiền hợp lệ.');
             try {
                 await db.collection('projects').doc(currentProjectId).collection('transactions').add({
-                    type: document.getElementById('t-type').value,
+                    type: type,
                     amount: amountRaw,
-                    description: document.getElementById('t-desc').value,
+                    description: document.getElementById(descElId).value,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                e.target.reset();
-            } catch (err) { alert('Lỗi thêm giao dịch. Quan trọng: Hãy chắc chắn bạn đã cập nhật Security Rules cho phép admin ghi dữ liệu.'); }
+                form.reset();
+            } catch (err) { alert('Lỗi thêm giao dịch: ' + err.message); }
+        }
+        document.getElementById('transaction-form-thu').onsubmit = (e) => {
+            e.preventDefault();
+            handleTransactionSubmit('thu', 't-amount-thu', 't-desc-thu', e.target);
         };
+        document.getElementById('transaction-form-chi').onsubmit = (e) => {
+            e.preventDefault();
+            handleTransactionSubmit('chi', 't-amount-chi', 't-desc-chi', e.target);
+        };
+
+        // --- SIDE PANEL ---
+        function toggleSidePanel() {
+            document.getElementById('project-side-panel').classList.toggle('open');
+            document.getElementById('side-panel-backdrop').classList.toggle('hidden');
+        }
 
         // --- ADMIN FUNCTIONS ---
         async function loadAdminUsers() {
@@ -431,7 +542,6 @@
                 const u = doc.data();
                 const uId = doc.id;
                 if (uId === currentUser.uid) return;
-
                 const canCreate = u.canCreateProjects !== false;
                 html += `<div class="user-card">
                     <div class="user-details">
@@ -452,32 +562,21 @@
             });
             container.innerHTML = html || '<p>Không có người dùng nào khác.</p>';
         }
-
         async function setDisplayName(userId) {
             const currentName = await db.collection('users').doc(userId).get().then(doc => doc.data().displayName || '');
             const newName = prompt("Nhập tên hiển thị mới cho người dùng:", currentName);
-            if (newName !== null) { // User clicked OK, even if it's empty
-                try {
-                    await db.collection('users').doc(userId).update({ displayName: newName.trim() });
-                    loadAdminUsers();
-                } catch(err) {
-                    console.error("Failed to set name: ", err);
-                    alert("Không thể đặt tên. Vui lòng thử lại.");
-                }
+            if (newName !== null) {
+                await db.collection('users').doc(userId).update({ displayName: newName.trim() });
+                loadAdminUsers();
             }
         }
-
         async function toggleCreatePermission(userId, canCreate) {
              if (currentUser.role !== 'admin') return;
-             try {
-                await db.collection('users').doc(userId).update({ canCreateProjects: canCreate });
-             } catch(err) {
-                console.error("Failed to update permission: ", err);
+             await db.collection('users').doc(userId).update({ canCreateProjects: canCreate }).catch(err => {
                 alert("Không thể cập nhật quyền. Vui lòng thử lại.");
                 loadAdminUsers();
-             }
+             });
         }
-
         document.getElementById('logout-btn').onclick = () => auth.signOut();
     </script>
 </body>
