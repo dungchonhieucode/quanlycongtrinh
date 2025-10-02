@@ -66,20 +66,14 @@
         .btn-login:hover {
             background-color: #1d4ed8;
         }
-        .btn-register {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-register:hover {
-             background-color: #5a6268;
-        }
-        #error-message {
-            color: #dc3545;
+        #error-message, #info-message {
             text-align: center;
             margin-top: 1rem;
             font-size: 14px;
             min-height: 20px;
         }
+        #error-message { color: #dc3545; }
+        #info-message { color: #6c757d; }
     </style>
 </head>
 <body>
@@ -92,17 +86,15 @@
             <input type="password" id="password-input" placeholder="Mật khẩu" required>
         </div>
         <p id="error-message"></p>
+        <p id="info-message">Chỉ Admin mới có thể đăng ký tài khoản mới</p>
         <button id="login-btn" class="btn-login">Đăng nhập</button>
-        <button id="register-btn" class="btn-register">Đăng ký</button>
     </div>
 
-    <!-- Firebase SDK Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyBKfEhKahWesUl_JV6mlSWmaKW2LSkKqos",
           authDomain: "quanlycongtrinh-ab20c.firebaseapp.com",
@@ -116,46 +108,18 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- DOM Elements ---
         const emailInput = document.getElementById('email-input');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
-        const registerBtn = document.getElementById('register-btn');
         const errorMessage = document.getElementById('error-message');
 
-        // --- REDIRECT IF ALREADY LOGGED IN ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                console.log('User already logged in, redirecting...');
                 window.location.href = 'index.html';
             }
         });
 
-        // --- FUNCTIONS ---
         const handleLogin = async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            errorMessage.textContent = ''; // Clear previous errors
-
-            if (!email || !password) {
-                errorMessage.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
-                return;
-            }
-
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                // The onAuthStateChanged listener will handle the redirect
-            } catch (error) {
-                console.error("Login Error:", error.code);
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMessage.textContent = 'Email hoặc mật khẩu không chính xác.';
-                } else {
-                    errorMessage.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
-                }
-            }
-        };
-
-        const handleRegister = async () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             errorMessage.textContent = '';
@@ -166,32 +130,21 @@
             }
 
             try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-
-                // Create a document in 'users' collection for the new user
-                await db.collection('users').doc(user.uid).set({
-                    email: user.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    role: 'user' // Default role
-                });
-                
-                // The onAuthStateChanged listener will handle the redirect
+                await auth.signInWithEmailAndPassword(email, password);
             } catch (error) {
-                console.error("Register Error:", error.code);
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage.textContent = 'Email này đã được sử dụng.';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+                console.error("Login Error:", error.code);
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage.textContent = 'Email hoặc mật khẩu không chính xác.';
                 } else {
                     errorMessage.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
                 }
             }
         };
 
-        // --- EVENT LISTENERS ---
         loginBtn.addEventListener('click', handleLogin);
-        registerBtn.addEventListener('click', handleRegister);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
     </script>
 </body>
 </html>
